@@ -2,6 +2,7 @@ package viettel.dac.intentanalysisservice.handler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import viettel.dac.intentanalysisservice.dto.ToolDTO;
 import viettel.dac.intentanalysisservice.event.*;
@@ -10,10 +11,12 @@ import viettel.dac.intentanalysisservice.model.AnalyzeIntentCommand;
 import viettel.dac.intentanalysisservice.model.ExtractParametersCommand;
 import viettel.dac.intentanalysisservice.model.Intent;
 import viettel.dac.intentanalysisservice.model.IntentWithParameters;
+import viettel.dac.intentanalysisservice.service.ParameterEnrichmentService;
 import viettel.dac.intentanalysisservice.service.PromptTemplateService;
 import viettel.dac.intentanalysisservice.service.ToolService;
 import viettel.dac.intentanalysisservice.util.JsonUtil;
 import viettel.dac.intentanalysisservice.validator.IntentCommandValidator;
+import viettel.dac.intentanalysisservice.validator.ParameterValidator;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,6 +37,13 @@ public class IntentAnalysisCommandHandler {
     private final EventPublisher eventPublisher;
     private final IntentCommandValidator validator;
     private final JsonUtil jsonUtil;
+
+    // Add this autowired field:
+    @Autowired
+    private ParameterValidator parameterValidator;
+
+    @Autowired
+    private ParameterEnrichmentService parameterEnrichmentService;
 
     /**
      * Handle a command to analyze user input for intents.
@@ -105,6 +115,7 @@ public class IntentAnalysisCommandHandler {
      * @param command The extract parameters command
      * @return List of intents with extracted parameters
      */
+    // Update the handleExtractParameters method to include validation and enrichment:
     public List<IntentWithParameters> handleExtractParameters(ExtractParametersCommand command) {
         try {
             // Validate command
@@ -135,17 +146,20 @@ public class IntentAnalysisCommandHandler {
             // Parse intents with parameters
             List<IntentWithParameters> intentsWithParams = parseIntentsWithParameters(llmResponse);
 
+            // Validate and enrich parameters
+            List<IntentWithParameters> enrichedIntents = parameterEnrichmentService.enrichParameters(intentsWithParams);
+
             // Calculate overall confidence
-            double overallConfidence = calculateAverageConfidence(intentsWithParams);
+            double overallConfidence = calculateAverageConfidence(enrichedIntents);
 
             // Publish parameters extracted event
             publishParametersExtractedEvent(command.getAnalysisId(),
-                    command.getUserInput(), intentsWithParams, overallConfidence);
+                    command.getUserInput(), enrichedIntents, overallConfidence);
 
             log.info("Completed parameter extraction for analysis ID: {}, found parameters for {} intents",
-                    command.getAnalysisId(), intentsWithParams.size());
+                    command.getAnalysisId(), enrichedIntents.size());
 
-            return intentsWithParams;
+            return enrichedIntents;
         } catch (Exception e) {
             log.error("Error extracting parameters: {}", e.getMessage(), e);
             publishParameterExtractionFailedEvent(command.getAnalysisId(), command, e);

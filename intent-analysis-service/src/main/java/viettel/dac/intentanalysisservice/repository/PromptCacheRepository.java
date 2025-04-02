@@ -19,7 +19,9 @@ public class PromptCacheRepository {
     private final RedisTemplate<String, String> redisTemplate;
     private static final String PROMPT_KEY_PREFIX = "prompt:";
     private static final String RESPONSE_KEY_PREFIX = "response:";
+    private static final String OPTIMIZED_KEY_PREFIX = "optimized:";
     private static final long CACHE_TTL_HOURS = 24;
+    private static final long OPTIMIZED_CACHE_TTL_HOURS = 72; // Longer TTL for optimized prompts
 
     /**
      * Cache a prompt and its response.
@@ -121,10 +123,26 @@ public class PromptCacheRepository {
      */
     public void saveOptimizedPrompt(String originalPrompt, String optimizedPrompt) {
         try {
-            String key = "optimized:" + getPromptHash(originalPrompt);
-            redisTemplate.opsForValue().set(key, optimizedPrompt, CACHE_TTL_HOURS, TimeUnit.HOURS);
+            String key = OPTIMIZED_KEY_PREFIX + getPromptHash(originalPrompt);
+            redisTemplate.opsForValue().set(key, optimizedPrompt, OPTIMIZED_CACHE_TTL_HOURS, TimeUnit.HOURS);
         } catch (Exception e) {
             log.error("Error saving optimized prompt: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Get an optimized prompt.
+     *
+     * @param originalPrompt The original prompt
+     * @return The optimized prompt, or null if not found
+     */
+    public String getOptimizedPrompt(String originalPrompt) {
+        try {
+            String key = OPTIMIZED_KEY_PREFIX + getPromptHash(originalPrompt);
+            return redisTemplate.opsForValue().get(key);
+        } catch (Exception e) {
+            log.error("Error retrieving optimized prompt: {}", e.getMessage());
+            return null;
         }
     }
 
@@ -163,4 +181,5 @@ public class PromptCacheRepository {
 
         return (double) commonWords / Math.max(words1.size(), words2.size());
     }
+
 }

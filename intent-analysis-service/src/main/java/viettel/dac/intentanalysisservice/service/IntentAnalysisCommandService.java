@@ -4,7 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import viettel.dac.intentanalysisservice.dto.AnalysisStatusResponse;
+import viettel.dac.intentanalysisservice.dto.AsyncAnalysisResponse;
+import viettel.dac.intentanalysisservice.dto.IntentAnalysisResponse;
+import viettel.dac.intentanalysisservice.exception.NotFoundException;
 import viettel.dac.intentanalysisservice.handler.IntentAnalysisCommandHandler;
+import viettel.dac.intentanalysisservice.model.AnalysisStatus;
 import viettel.dac.intentanalysisservice.model.AnalyzeIntentCommand;
 import viettel.dac.intentanalysisservice.model.ExtractParametersCommand;
 import viettel.dac.intentanalysisservice.model.Intent;
@@ -167,6 +172,43 @@ public class IntentAnalysisCommandService {
     }
 
     /**
+     * Execute the extract parameters command directly.
+     *
+     * @param command The command to execute
+     * @return List of intents with parameters
+     */
+    public List<IntentWithParameters> executeExtractParametersCommand(ExtractParametersCommand command) {
+        return commandHandler.handleExtractParameters(command);
+    }
+
+    /**
+     * Cancel an analysis (for saga compensation).
+     *
+     * @param analysisId The analysis ID to cancel
+     * @param reason The reason for cancellation
+     * @return true if cancelled successfully, false if not found
+     */
+    public boolean cancelAnalysis(String analysisId, String reason) {
+        log.info("Cancelling analysis: {}, reason: {}", analysisId, reason);
+
+        // Find the analysis in our status map
+        AnalysisStatus status = analysisStatusMap.get(analysisId);
+        if (status == null) {
+            log.warn("Analysis not found for cancellation: {}", analysisId);
+            return false;
+        }
+
+        // Update status to cancelled
+        status.setStatus("CANCELLED");
+        status.setErrorMessage("Cancelled due to saga compensation: " + reason);
+
+        // In a real implementation, we would also publish an event or update a database record
+
+        log.info("Analysis cancelled: {}", analysisId);
+        return true;
+    }
+
+    /**
      * Extract parameters for the identified intents.
      *
      * @param analysisId The analysis ID
@@ -212,182 +254,5 @@ public class IntentAnalysisCommandService {
                 .mapToDouble(Intent::getConfidence)
                 .average()
                 .orElse(0.0);
-    }
-
-    /**
-     * Status of an asynchronous analysis.
-     */
-    private static class AnalysisStatus {
-        private String status;
-        private int progress;
-        private IntentAnalysisResponse result;
-        private String errorMessage;
-
-        public String getStatus() {
-            return status;
-        }
-
-        public void setStatus(String status) {
-            this.status = status;
-        }
-
-        public int getProgress() {
-            return progress;
-        }
-
-        public void setProgress(int progress) {
-            this.progress = progress;
-        }
-
-        public IntentAnalysisResponse getResult() {
-            return result;
-        }
-
-        public void setResult(IntentAnalysisResponse result) {
-            this.result = result;
-        }
-
-        public String getErrorMessage() {
-            return errorMessage;
-        }
-
-        public void setErrorMessage(String errorMessage) {
-            this.errorMessage = errorMessage;
-        }
-    }
-
-    /**
-     * Not found exception.
-     */
-    public static class NotFoundException extends RuntimeException {
-        public NotFoundException(String message) {
-            super(message);
-        }
-    }
-
-    /**
-     * Response for intent analysis.
-     */
-    public static class IntentAnalysisResponse {
-        private String code;
-        private String analysisId;
-        private List<IntentWithParameters> intents;
-        private boolean multiIntent;
-        private double confidence;
-
-        public String getCode() {
-            return code;
-        }
-
-        public void setCode(String code) {
-            this.code = code;
-        }
-
-        public String getAnalysisId() {
-            return analysisId;
-        }
-
-        public void setAnalysisId(String analysisId) {
-            this.analysisId = analysisId;
-        }
-
-        public List<IntentWithParameters> getIntents() {
-            return intents;
-        }
-
-        public void setIntents(List<IntentWithParameters> intents) {
-            this.intents = intents;
-        }
-
-        public boolean isMultiIntent() {
-            return multiIntent;
-        }
-
-        public void setMultiIntent(boolean multiIntent) {
-            this.multiIntent = multiIntent;
-        }
-
-        public double getConfidence() {
-            return confidence;
-        }
-
-        public void setConfidence(double confidence) {
-            this.confidence = confidence;
-        }
-    }
-
-    /**
-     * Response for asynchronous analysis request.
-     */
-    public static class AsyncAnalysisResponse {
-        private String analysisId;
-        private String message;
-
-        public String getAnalysisId() {
-            return analysisId;
-        }
-
-        public void setAnalysisId(String analysisId) {
-            this.analysisId = analysisId;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
-        }
-    }
-
-    /**
-     * Response for analysis status request.
-     */
-    public static class AnalysisStatusResponse {
-        private String analysisId;
-        private String status;
-        private int progress;
-        private IntentAnalysisResponse result;
-        private String errorMessage;
-
-        public String getAnalysisId() {
-            return analysisId;
-        }
-
-        public void setAnalysisId(String analysisId) {
-            this.analysisId = analysisId;
-        }
-
-        public String getStatus() {
-            return status;
-        }
-
-        public void setStatus(String status) {
-            this.status = status;
-        }
-
-        public int getProgress() {
-            return progress;
-        }
-
-        public void setProgress(int progress) {
-            this.progress = progress;
-        }
-
-        public IntentAnalysisResponse getResult() {
-            return result;
-        }
-
-        public void setResult(IntentAnalysisResponse result) {
-            this.result = result;
-        }
-
-        public String getErrorMessage() {
-            return errorMessage;
-        }
-
-        public void setErrorMessage(String errorMessage) {
-            this.errorMessage = errorMessage;
-        }
     }
 }

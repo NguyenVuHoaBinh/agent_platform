@@ -12,7 +12,7 @@ import java.time.Duration;
  * Configuration for Elasticsearch.
  */
 @Configuration
-@EnableElasticsearchRepositories(basePackages = "com.example.intentanalysis.query.repository")
+@EnableElasticsearchRepositories(basePackages = "viettel.dac.intentanalysisservice.query.repository")
 public class ElasticsearchConfig extends ElasticsearchConfiguration {
 
     @Value("${spring.elasticsearch.rest.uris}")
@@ -26,16 +26,18 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
 
     @Override
     public ClientConfiguration clientConfiguration() {
-        ClientConfiguration.MaybeSecureClientConfigurationBuilder builder = ClientConfiguration.builder()
+        ClientConfiguration.TerminalClientConfigurationBuilder builder = ClientConfiguration.builder()
                 .connectedTo(elasticsearchUri)
                 .withConnectTimeout(Duration.ofSeconds(5))
                 .withSocketTimeout(Duration.ofSeconds(10));
 
         // Add credentials if provided
         if (!elasticsearchUsername.isEmpty() && !elasticsearchPassword.isEmpty()) {
-            builder.withBasicAuth(elasticsearchUsername, elasticsearchPassword);
+            builder = builder.withBasicAuth(elasticsearchUsername, elasticsearchPassword);
         }
 
         return builder.build();
     }
+
+
 }
