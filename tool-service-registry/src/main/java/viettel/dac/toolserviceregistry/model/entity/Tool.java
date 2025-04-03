@@ -42,6 +42,10 @@ public class Tool {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tool_type")
+    private ToolType toolType = ToolType.API_TOOL;
+
     @OneToMany(mappedBy = "tool", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ToolParameter> parameters = new ArrayList<>();
