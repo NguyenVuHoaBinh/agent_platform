@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 /**
  * DTO for transferring tool category data between layers.
  */
@@ -12,7 +14,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ToolCategoryDTO {
+public class ToolCategoryDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String id;
     private String name;
     private String description;

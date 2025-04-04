@@ -4,9 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import viettel.dac.toolserviceregistry.model.dto.ApiToolMetadataDTO;
 import viettel.dac.toolserviceregistry.model.dto.ToolCategoryDTO;
 import viettel.dac.toolserviceregistry.model.dto.ToolDependencyDTO;
 import viettel.dac.toolserviceregistry.model.dto.ToolParameterDTO;
+import viettel.dac.toolserviceregistry.model.enums.ToolType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +20,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ToolEvent extends BaseEvent {
-    private static final long serialVersionUID = 1L;
+    private ToolType toolType;
+    private ApiToolMetadataDTO apiMetadata;
 
     /**
      * ID of the tool
@@ -82,6 +85,8 @@ public class ToolEvent extends BaseEvent {
             String description,
             boolean active,
             int version,
+            ToolType toolType,
+            ApiToolMetadataDTO apiMetadata,
             List<ToolParameterDTO> parameters,
             List<ToolDependencyDTO> dependencies,
             List<ToolCategoryDTO> categories) {
@@ -91,6 +96,8 @@ public class ToolEvent extends BaseEvent {
         event.description = description;
         event.active = active;
         event.version = version;
+        event.toolType = toolType;
+        event.apiMetadata = apiMetadata;
         event.parameters = parameters != null ? parameters : new ArrayList<>();
         event.dependencies = dependencies != null ? dependencies : new ArrayList<>();
         event.categories = categories != null ? categories : new ArrayList<>();

@@ -1,4 +1,4 @@
-package viettel.dac.toolserviceregistry.model.entity;
+package viettel.dac.toolserviceregistry.model.event;
 
 import lombok.Builder;
 import lombok.AllArgsConstructor;

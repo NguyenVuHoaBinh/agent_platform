@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import viettel.dac.toolserviceregistry.exception.CyclicDependencyException;
+import viettel.dac.toolserviceregistry.exception.DependencyToolNotFoundException;
 import viettel.dac.toolserviceregistry.exception.InvalidParameterMappingException;
 import viettel.dac.toolserviceregistry.exception.ToolNotFoundException;
 import viettel.dac.toolserviceregistry.graph.DirectedGraph;

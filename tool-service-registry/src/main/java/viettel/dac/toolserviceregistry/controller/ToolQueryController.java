@@ -5,11 +5,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import viettel.dac.toolserviceregistry.model.dto.ExecutionPlanView;
+import viettel.dac.toolserviceregistry.model.enums.ToolType;
 import viettel.dac.toolserviceregistry.model.reponse.ToolDependencyView;
 import viettel.dac.toolserviceregistry.model.reponse.ToolDetailResponse;
 import viettel.dac.toolserviceregistry.model.reponse.ToolQueryResponse;
 import viettel.dac.toolserviceregistry.model.request.ExecutionPlanRequest;
-
+import viettel.dac.toolserviceregistry.service.ToolQueryService;
 
 import java.util.List;
 
@@ -38,14 +39,16 @@ public class ToolQueryController {
     public ToolQueryResponse queryTools(
             @RequestParam(required = false) Boolean active,
             @RequestParam(required = false) String category,
+            @RequestParam(required = false) ToolType toolType, // New parameter
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "name,asc") String sort) {
-        log.info("Querying tools with filters: active={}, category={}, search={}",
-                active, category, search);
 
-        return queryService.queryTools(active, category, search, page, size, sort);
+        log.info("Querying tools with filters: active={}, category={}, toolType={}, search={}",
+                active, category, toolType, search);
+
+        return queryService.queryTools(active, category, toolType, search, page, size, sort);
     }
 
     /**

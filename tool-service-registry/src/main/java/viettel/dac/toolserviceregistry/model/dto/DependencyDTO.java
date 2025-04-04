@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import viettel.dac.toolserviceregistry.model.enums.DependencyType;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,7 +17,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DependencyDTO {
+public class DependencyDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String dependencyToolId;
     private DependencyType dependencyType;
 

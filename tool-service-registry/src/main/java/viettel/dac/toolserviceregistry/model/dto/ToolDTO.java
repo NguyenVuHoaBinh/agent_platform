@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import viettel.dac.toolserviceregistry.model.enums.ToolType;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -24,6 +25,8 @@ public class ToolDTO {
     private int version;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private ToolType toolType;
+    private ApiToolMetadataDTO apiMetadata;
 
     @Builder.Default
     private List<ToolParameterDTO> parameters = new ArrayList<>();

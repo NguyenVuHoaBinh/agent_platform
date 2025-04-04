@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import viettel.dac.toolserviceregistry.model.enums.ToolType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,4 +63,10 @@ public class CreateToolRequest {
     @Valid
     @Builder.Default
     private List<ToolExampleRequest> examples = new ArrayList<>();
+
+    @NotNull(message = "Tool type is required")
+    private ToolType toolType = ToolType.API_TOOL;
+
+    @Valid
+    private ApiToolMetadataRequest apiMetadata;
 }

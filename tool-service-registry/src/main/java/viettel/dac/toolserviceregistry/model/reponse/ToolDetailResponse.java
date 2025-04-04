@@ -4,10 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import viettel.dac.toolserviceregistry.model.dto.ToolCategoryDTO;
-import viettel.dac.toolserviceregistry.model.dto.ToolDependencyDTO;
-import viettel.dac.toolserviceregistry.model.dto.ToolExampleDTO;
-import viettel.dac.toolserviceregistry.model.dto.ToolParameterDTO;
+import viettel.dac.toolserviceregistry.model.dto.*;
+import viettel.dac.toolserviceregistry.model.enums.ToolType;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -36,4 +34,6 @@ public class ToolDetailResponse {
     private int version;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private ToolType toolType;
+    private ApiToolMetadataDTO apiMetadata;
 }

@@ -2,7 +2,6 @@ package viettel.dac.toolserviceregistry.exception;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -132,6 +131,44 @@ public class GlobalExceptionHandler {
         return ErrorResponse.builder()
                 .code("INTERNAL_SERVER_ERROR")
                 .message("An unexpected error occurred")
+                .details(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * Handles tool type not compatible exceptions.
+     *
+     * @param ex The exception
+     * @return Error response
+     */
+    @ExceptionHandler(ToolTypeNotCompatibleException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleToolTypeNotCompatibleException(ToolTypeNotCompatibleException ex) {
+        log.error("Tool type not compatible: {}", ex.getMessage());
+
+        return ErrorResponse.builder()
+                .code("TOOL_TYPE_NOT_COMPATIBLE")
+                .message("Tool type is not compatible with the requested operation")
+                .details(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * Handles API metadata not found exceptions.
+     *
+     * @param ex The exception
+     * @return Error response
+     */
+    @ExceptionHandler(ApiMetadataNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleApiMetadataNotFoundException(ApiMetadataNotFoundException ex) {
+        log.error("API metadata not found: {}", ex.getMessage());
+
+        return ErrorResponse.builder()
+                .code("API_METADATA_NOT_FOUND")
+                .message("API metadata not found")
                 .details(ex.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();

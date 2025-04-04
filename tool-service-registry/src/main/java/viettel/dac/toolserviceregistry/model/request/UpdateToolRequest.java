@@ -1,11 +1,13 @@
 package viettel.dac.toolserviceregistry.model.request;
 
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import viettel.dac.toolserviceregistry.model.enums.ToolType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,4 +58,10 @@ public class UpdateToolRequest {
     @Valid
     @Builder.Default
     private List<ToolExampleRequest> examples = new ArrayList<>();
+
+    @NotNull(message = "Tool type is required")
+    private ToolType toolType;
+
+    @Valid
+    private ApiToolMetadataRequest apiMetadata;
 }

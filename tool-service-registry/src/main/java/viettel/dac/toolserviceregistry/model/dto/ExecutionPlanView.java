@@ -5,11 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.Serializable;
+import java.util.*;
 
 /**
  * DTO for representing the execution plan for a set of tools.
@@ -18,7 +15,9 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExecutionPlanView {
+public class ExecutionPlanView implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     /**
      * Ordered list of tool IDs to execute
      */

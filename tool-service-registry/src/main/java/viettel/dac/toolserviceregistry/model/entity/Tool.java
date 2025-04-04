@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import viettel.dac.toolserviceregistry.model.enums.ToolType;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -48,6 +49,10 @@ public class Tool {
     @OneToMany(mappedBy = "tool", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ToolDependency> dependencies = new ArrayList<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tool_type")
+    private ToolType toolType = ToolType.OTHER;
 
     @ManyToMany
     @JoinTable(

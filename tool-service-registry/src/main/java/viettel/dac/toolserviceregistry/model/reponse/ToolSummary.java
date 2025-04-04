@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import viettel.dac.toolserviceregistry.model.enums.ToolType;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -27,4 +28,5 @@ public class ToolSummary {
     private int dependencyCount;
     @Builder.Default
     private List<String> categories = new ArrayList<>();
+    private ToolType toolType;
 }

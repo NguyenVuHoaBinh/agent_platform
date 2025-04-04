@@ -7,7 +7,6 @@ public class ToolNotFoundException extends RuntimeException {
     public ToolNotFoundException(String id) {
         super("Tool not found with ID: " + id);
     }
-
     public ToolNotFoundException(String field, String value) {
         super("Tool not found with " + field + ": " + value);
     }
