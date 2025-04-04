@@ -10,15 +10,18 @@ import viettel.dac.toolserviceregistry.exception.ToolNotFoundException;
 import viettel.dac.toolserviceregistry.exception.ToolTypeNotCompatibleException;
 import viettel.dac.toolserviceregistry.model.dto.ApiHeaderDTO;
 import viettel.dac.toolserviceregistry.model.dto.ApiToolMetadataDTO;
-import viettel.dac.toolserviceregistry.model.entity.ApiHeader;
-import viettel.dac.toolserviceregistry.model.entity.ApiToolMetadata;
-import viettel.dac.toolserviceregistry.model.entity.Tool;
+import viettel.dac.toolserviceregistry.model.entity.*;
+import viettel.dac.toolserviceregistry.model.enums.ApiParameterLocation;
+import viettel.dac.toolserviceregistry.model.enums.ParameterSource;
 import viettel.dac.toolserviceregistry.model.enums.ToolType;
 import viettel.dac.toolserviceregistry.model.request.ApiHeaderRequest;
 import viettel.dac.toolserviceregistry.model.request.ApiToolMetadataRequest;
+import viettel.dac.toolserviceregistry.repository.ApiParameterMappingRepository;
 import viettel.dac.toolserviceregistry.repository.ApiToolMetadataRepository;
+import viettel.dac.toolserviceregistry.repository.ToolParameterRepository;
 import viettel.dac.toolserviceregistry.repository.ToolRepository;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -32,6 +35,8 @@ import java.util.stream.Collectors;
 public class ApiToolService {
     private final ToolRepository toolRepository;
     private final ApiToolMetadataRepository apiToolMetadataRepository;
+    private final ToolParameterRepository toolParameterRepository;
+    private final ApiParameterMappingRepository apiParameterMappingRepository;
 
     /**
      * Gets API metadata for a tool.
@@ -140,7 +145,8 @@ public class ApiToolService {
      * @param metadata The API metadata entity
      * @return The API metadata DTO
      */
-    ApiToolMetadataDTO mapToApiToolMetadataDTO(ApiToolMetadata metadata) {
+    public ApiToolMetadataDTO mapToApiToolMetadataDTO(ApiToolMetadata metadata) {
+        // Existing code for mapping ApiToolMetadata to ApiToolMetadataDTO
         if (metadata == null) {
             return null;
         }
@@ -198,4 +204,60 @@ public class ApiToolService {
         header.setSensitive(request.isSensitive());
         return header;
     }
+    /**
+     * Update parameter sources based on API parameter mappings.
+     *
+     * @param toolId The ID of the tool
+     */
+    @Transactional
+    public void updateParameterSources(String toolId) {
+        log.debug("Updating parameter sources for tool: {}", toolId);
+
+        Tool tool = toolRepository.findById(toolId)
+                .orElseThrow(() -> new ToolNotFoundException(toolId));
+
+        if (tool.getToolType() != ToolType.API_TOOL) {
+            throw new ToolTypeNotCompatibleException(toolId, "API_TOOL");
+        }
+
+        ApiToolMetadata metadata = apiToolMetadataRepository.findByToolId(toolId)
+                .orElseThrow(() -> new ApiMetadataNotFoundException(toolId));
+
+        // Get all parameter mappings for this API tool
+        List<ApiParameterMapping> mappings = apiParameterMappingRepository
+                .findByApiToolMetadataId(metadata.getId());
+
+        // Update parameter sources based on mappings
+        for (ApiParameterMapping mapping : mappings) {
+            ToolParameter parameter = mapping.getToolParameter();
+
+            if (mapping.getApiLocation() == ApiParameterLocation.RESPONSE) {
+                parameter.setParameterSource(ParameterSource.API_RESPONSE);
+                parameter.setExtractionPath(mapping.getResponseExtractionPath());
+            } else {
+                // For request parameters, set the source based on the parameter's properties
+                if (parameter.getDefaultValue() != null && !parameter.getDefaultValue().isEmpty()) {
+                    parameter.setParameterSource(ParameterSource.DEFAULT_VALUE);
+                } else {
+                    parameter.setParameterSource(ParameterSource.USER_INPUT);
+                }
+            }
+
+            toolParameterRepository.save(parameter);
+        }
+    }
+    /**
+     * Gets API metadata for a tool by ID.
+     *
+     * @param toolId The ID of the tool
+     * @return The API metadata DTO or null if not found
+     */
+    public ApiToolMetadataDTO getApiToolMetadataDTO(String toolId) {
+        log.debug("Getting API metadata DTO for tool: {}", toolId);
+
+        return apiToolMetadataRepository.findByToolId(toolId)
+                .map(this::mapToApiToolMetadataDTO)
+                .orElse(null);
+    }
+
 }

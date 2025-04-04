@@ -3,12 +3,14 @@ package viettel.dac.toolserviceregistry.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import viettel.dac.toolserviceregistry.model.dto.ApiToolMetadataDTO;
 import viettel.dac.toolserviceregistry.model.enums.AuthenticationType;
 import viettel.dac.toolserviceregistry.model.enums.HttpMethod;
 import viettel.dac.toolserviceregistry.model.request.ApiToolMetadataRequest;
+import viettel.dac.toolserviceregistry.service.ApiTestService;
 import viettel.dac.toolserviceregistry.service.ApiToolService;
 
 import java.util.Arrays;
@@ -62,6 +64,9 @@ public class ApiToolController {
         return ResponseEntity.ok(metadata);
     }
 
+    @Autowired
+    private ApiTestService apiTestService;
+
     /**
      * Tests an API call for a tool.
      *
@@ -75,12 +80,11 @@ public class ApiToolController {
             @RequestBody(required = false) Map<String, Object> parameters) {
         log.info("Testing API call for tool: {}", toolId);
 
-        String response = apiToolService.testApiCall(toolId, parameters);
+        if (parameters == null) {
+            parameters = new HashMap<>();
+        }
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("success", true);
-        result.put("response", response);
-
+        Map<String, Object> result = apiTestService.testApiCall(toolId, parameters);
         return ResponseEntity.ok(result);
     }
 
@@ -137,4 +141,6 @@ public class ApiToolController {
                 return "Unknown authentication type";
         }
     }
+
+
 }

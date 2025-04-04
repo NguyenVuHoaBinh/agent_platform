@@ -4,6 +4,8 @@ import org.mapstruct.Mapper;
 import viettel.dac.toolserviceregistry.model.dto.ToolParameterDTO;
 import viettel.dac.toolserviceregistry.model.entity.ToolParameter;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -27,4 +29,17 @@ public interface ToolParameterMapper {
      * @return The corresponding list of ToolParameterDTO objects
      */
     List<ToolParameterDTO> toDtoList(List<ToolParameter> parameters);
+
+    /**
+     * Converts a comma-separated string to a list of strings.
+     *
+     * @param allowedValues The comma-separated string
+     * @return List of strings
+     */
+    default List<String> map(String allowedValues) {
+        if (allowedValues == null || allowedValues.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return Arrays.asList(allowedValues.split(","));
+    }
 }

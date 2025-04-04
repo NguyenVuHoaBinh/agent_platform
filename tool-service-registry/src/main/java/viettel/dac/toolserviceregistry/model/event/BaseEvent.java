@@ -1,9 +1,9 @@
 package viettel.dac.toolserviceregistry.model.event;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -14,8 +14,8 @@ import java.util.UUID;
 /**
  * Base class for all events in the system.
  */
-@Builder
 @Data
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 public abstract class BaseEvent implements Serializable {
@@ -39,7 +39,6 @@ public abstract class BaseEvent implements Serializable {
     /**
      * Additional metadata for the event
      */
-    @Builder.Default
     private Map<String, Object> metadata = new HashMap<>();
 
     /**
@@ -64,4 +63,3 @@ public abstract class BaseEvent implements Serializable {
         metadata.put(key, value);
     }
 }
-

@@ -57,4 +57,12 @@ public interface ToolRepository extends JpaRepository<Tool, String>, JpaSpecific
      * @return true if a tool exists with the given name and a different ID
      */
     boolean existsByNameAndIdNot(String name, String id);
+
+    /**
+     * Find all tools that belong to a specific category.
+     *
+     * @param categoryId The ID of the category
+     * @return List of tools in the category
+     */
+    List<Tool> findByCategoriesId(String categoryId);
 }

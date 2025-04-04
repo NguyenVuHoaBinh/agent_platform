@@ -5,9 +5,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import viettel.dac.toolserviceregistry.model.dto.ParameterRequirement;
 import viettel.dac.toolserviceregistry.model.dto.ToolParameterDTO;
 import viettel.dac.toolserviceregistry.model.dto.ValidationResult;
+import viettel.dac.toolserviceregistry.model.entity.Tool;
+import viettel.dac.toolserviceregistry.model.entity.ToolParameter;
+import viettel.dac.toolserviceregistry.model.enums.ParameterSource;
 import viettel.dac.toolserviceregistry.model.enums.ParameterType;
+import viettel.dac.toolserviceregistry.repository.ToolParameterRepository;
+import viettel.dac.toolserviceregistry.repository.ToolRepository;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -20,6 +26,10 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class ParameterValidationService {
     private final ObjectMapper objectMapper;
+    private final ToolParameterRepository toolParameterRepository;
+    private final ApiResponseParser apiResponseParser;
+    private final ToolRepository toolRepository;
+
 
     /**
      * Validates a parameter value against its constraints.
@@ -497,5 +507,120 @@ public class ParameterValidationService {
                         parameter.getValidationMessage() : "Value does not match required pattern");
             }
         }
+    }
+
+    /**
+     * Extracts response parameters from an API response.
+     *
+     * @param toolId The ID of the tool
+     * @param response The API response
+     * @param responseFormat The format of the response
+     * @return Map of parameter name to extracted value
+     */
+    public Map<String, Object> extractResponseParameters(String toolId, String response, String responseFormat) {
+        log.debug("Extracting response parameters for tool: {}", toolId);
+
+        Map<String, Object> extractedParams = new HashMap<>();
+
+        // Get all API response parameters for the tool
+        List<ToolParameter> responseParameters = toolParameterRepository.findByToolIdAndParameterSource(
+                toolId, ParameterSource.API_RESPONSE);
+
+        if (responseParameters.isEmpty()) {
+            return extractedParams;
+        }
+
+        // For each response parameter, extract the value using its path
+        for (ToolParameter parameter : responseParameters) {
+            if (parameter.getExtractionPath() != null && !parameter.getExtractionPath().isEmpty()) {
+                try {
+                    Object value = apiResponseParser.extractValue(
+                            response, parameter.getExtractionPath(), responseFormat);
+
+                    if (value != null) {
+                        extractedParams.put(parameter.getName(), value);
+                        log.debug("Extracted parameter {}: {}", parameter.getName(), value);
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to extract parameter {}: {}", parameter.getName(), e.getMessage());
+                }
+            }
+        }
+
+        return extractedParams;
+    }
+
+    /**
+     * Identifies missing parameters for a list of tools.
+     *
+     * @param toolsInOrder List of tool IDs in execution order
+     * @param providedParameters Map of parameters already provided
+     * @return Map of tool ID to set of missing parameters
+     */
+    public Map<String, Set<ParameterRequirement>> identifyMissingParameters(
+            List<String> toolsInOrder,
+            Map<String, Object> providedParameters) {
+        log.debug("Identifying missing parameters for tools: {}", toolsInOrder);
+
+        Map<String, Set<ParameterRequirement>> missingParameters = new HashMap<>();
+        Map<String, Object> availableParameters = new HashMap<>(providedParameters);
+
+        for (String toolId : toolsInOrder) {
+            Tool tool = toolRepository.findById(toolId).orElse(null);
+            if (tool == null) continue;
+
+            Set<ParameterRequirement> missingForTool = new HashSet<>();
+
+            for (ToolParameter param : tool.getParameters()) {
+                String paramName = param.getName();
+
+                // Check if parameter is already provided
+                if (!isParameterProvided(paramName, availableParameters)) {
+                    ParameterRequirement requirement = new ParameterRequirement(
+                            paramName,
+                            param.isRequired(),
+                            param.getPriority(),
+                            param.getDescription(),
+                            param.getExamples(),
+                            param.getDefaultValue()
+                    );
+                    missingForTool.add(requirement);
+                }
+            }
+
+            if (!missingForTool.isEmpty()) {
+                missingParameters.put(toolId, missingForTool);
+            }
+
+            // Add this tool's output parameters to available parameters for next tools
+            availableParameters.put(tool.getName() + "_executed", true);
+        }
+
+        return missingParameters;
+    }
+
+    /**
+     * Checks if there are any required parameters missing.
+     *
+     * @param missingParameters Map of tool ID to set of missing parameters
+     * @return true if there are missing required parameters
+     */
+    public boolean hasRequiredParametersMissing(
+            Map<String, Set<ParameterRequirement>> missingParameters) {
+        return missingParameters.values().stream()
+                .flatMap(Set::stream)
+                .anyMatch(ParameterRequirement::isRequired);
+    }
+
+    /**
+     * Checks if a parameter is provided.
+     *
+     * @param paramName The name of the parameter
+     * @param providedParameters Map of provided parameters
+     * @return true if the parameter is provided
+     */
+    private boolean isParameterProvided(String paramName, Map<String, Object> providedParameters) {
+        return providedParameters.containsKey(paramName) &&
+                providedParameters.get(paramName) != null;
     }
 }
