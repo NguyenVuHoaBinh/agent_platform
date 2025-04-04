@@ -10,6 +10,7 @@ import viettel.dac.toolserviceregistry.exception.*;
 import viettel.dac.toolserviceregistry.mapper.ToolMapper;
 import viettel.dac.toolserviceregistry.model.dto.ToolDTO;
 import viettel.dac.toolserviceregistry.model.entity.*;
+import viettel.dac.toolserviceregistry.model.enums.ParameterSource;
 import viettel.dac.toolserviceregistry.model.enums.ToolEventType;
 import viettel.dac.toolserviceregistry.model.enums.ToolType;
 import viettel.dac.toolserviceregistry.model.event.ToolEvent;
@@ -360,6 +361,7 @@ public class ToolCommandService {
      */
     private ToolParameter mapToToolParameter(ToolParameterRequest request) {
         ToolParameter parameter = new ToolParameter();
+
         parameter.setName(request.getName());
         parameter.setDescription(request.getDescription());
         parameter.setParameterType(request.getParameterType());
@@ -371,6 +373,27 @@ public class ToolCommandService {
         parameter.setPriority(request.getPriority() != null ? request.getPriority() : 0);
         parameter.setExamples(request.getExamples());
         parameter.setSuggestionQuery(request.getSuggestionQuery());
+
+        // New fields
+        parameter.setParameterSource(request.getParameterSource() != null ?
+                request.getParameterSource() : ParameterSource.USER_INPUT);
+        parameter.setMinValue(request.getMinValue());
+        parameter.setMaxValue(request.getMaxValue());
+        parameter.setMinLength(request.getMinLength());
+        parameter.setMaxLength(request.getMaxLength());
+
+        // Convert allowed values list to comma-separated string
+        if (request.getAllowedValues() != null && !request.getAllowedValues().isEmpty()) {
+            parameter.setAllowedValues(String.join(",", request.getAllowedValues()));
+        }
+
+        parameter.setFormatHint(request.getFormatHint());
+        parameter.setSensitive(request.isSensitive());
+        parameter.setArray(request.isArray());
+        parameter.setArrayItemType(request.getArrayItemType());
+        parameter.setObjectSchema(request.getObjectSchema());
+        parameter.setExtractionPath(request.getExtractionPath());
+
         return parameter;
     }
 
@@ -481,7 +504,8 @@ public class ToolCommandService {
         }
 
         // Validate parameter type
-        toolValidator.validateParameterType(parameterRequest.getName(), parameterRequest.getParameterType());
+        // TODO:Investigate wrongType
+        toolValidator.validateParameterType(parameterRequest.getName(), String.valueOf(parameterRequest.getParameterType()));
 
         // Validate validation pattern if present
         if (parameterRequest.getValidationPattern() != null && !parameterRequest.getValidationPattern().isEmpty()) {

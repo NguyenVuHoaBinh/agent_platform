@@ -173,4 +173,61 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .build();
     }
+
+    /**
+     * Handles tool parameter not found exceptions.
+     *
+     * @param ex The exception
+     * @return Error response
+     */
+    @ExceptionHandler(ToolParameterNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleToolParameterNotFoundException(ToolParameterNotFoundException ex) {
+        log.error("Tool parameter not found: {}", ex.getMessage());
+
+        return ErrorResponse.builder()
+                .code("TOOL_PARAMETER_NOT_FOUND")
+                .message("Tool parameter not found")
+                .details(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * Handles resource not found exceptions.
+     *
+     * @param ex The exception
+     * @return Error response
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleResourceNotFoundException(ResourceNotFoundException ex) {
+        log.error("Resource not found: {}", ex.getMessage());
+
+        return ErrorResponse.builder()
+                .code("RESOURCE_NOT_FOUND")
+                .message("Resource not found")
+                .details(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * Handles invalid parameter exceptions.
+     *
+     * @param ex The exception
+     * @return Error response
+     */
+    @ExceptionHandler(InvalidParameterException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleInvalidParameterException(InvalidParameterException ex) {
+        log.error("Invalid parameter: {}", ex.getMessage());
+
+        return ErrorResponse.builder()
+                .code("INVALID_PARAMETER")
+                .message("Invalid parameter value")
+                .details(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
 }

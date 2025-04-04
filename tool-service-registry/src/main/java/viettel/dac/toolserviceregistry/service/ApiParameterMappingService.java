@@ -1,4 +1,3 @@
-// File: src/main/java/viettel/dac/toolserviceregistry/service/ApiParameterMappingService.java
 package viettel.dac.toolserviceregistry.service;
 
 import jakarta.transaction.Transactional;

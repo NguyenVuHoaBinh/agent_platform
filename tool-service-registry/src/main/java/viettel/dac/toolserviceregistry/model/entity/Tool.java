@@ -54,10 +54,6 @@ public class Tool {
     @Builder.Default
     private List<ToolDependency> dependencies = new ArrayList<>();
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "tool_type")
-    private ToolType toolType = ToolType.OTHER;
-
     @ManyToMany
     @JoinTable(
             name = "tool_category_mapping",
