@@ -1,4 +1,3 @@
-// File: src/main/java/viettel/dac/toolserviceregistry/controller/ApiParameterMappingController.java
 package viettel.dac.toolserviceregistry.controller;
 
 import jakarta.validation.Valid;
@@ -11,8 +10,10 @@ import viettel.dac.toolserviceregistry.model.enums.ApiParameterLocation;
 import viettel.dac.toolserviceregistry.model.request.ApiParameterMappingRequest;
 import viettel.dac.toolserviceregistry.service.ApiParameterMappingService;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * REST controller for API parameter mapping operations.
@@ -118,8 +119,9 @@ public class ApiParameterMappingController {
                     locationInfo.put("description", getApiParameterLocationDescription(location));
                     return locationInfo;
                 })
-                .collect(Collectors.toList());
+                .toList(); // Use Stream.toList() to create an unmodifiable list
     }
+
 
     /**
      * Gets a description for an API parameter location.
@@ -128,21 +130,14 @@ public class ApiParameterMappingController {
      * @return The description of the API parameter location
      */
     private String getApiParameterLocationDescription(ApiParameterLocation location) {
-        switch (location) {
-            case QUERY:
-                return "Parameter appears in the query string";
-            case PATH:
-                return "Parameter is part of the URL path";
-            case HEADER:
-                return "Parameter appears as an HTTP header";
-            case BODY:
-                return "Parameter appears in the request body";
-            case FORM:
-                return "Parameter is sent as form data";
-            case RESPONSE:
-                return "Parameter is extracted from the response";
-            default:
-                return "Unknown API parameter location";
-        }
+        return switch (location) {
+            case QUERY -> "Parameter appears in the query string";
+            case PATH -> "Parameter is part of the URL path";
+            case HEADER -> "Parameter appears as an HTTP header";
+            case BODY -> "Parameter appears in the request body";
+            case FORM -> "Parameter is sent as form data";
+            case RESPONSE -> "Parameter is extracted from the response";
+            default -> "Unknown API parameter location";
+        };
     }
 }

@@ -19,7 +19,6 @@ import viettel.dac.toolserviceregistry.repository.ToolRepository;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Service for managing API authentication configurations.
@@ -28,6 +27,11 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class ApiAuthService {
+    // Constants for string literals
+    private static final String API_TOOL = "API_TOOL";
+    private static final String API_AUTH_CONFIG = "API authentication configuration";
+    private static final String API_TOOL_METADATA = "API tool metadata";
+
     private final ApiAuthConfigRepository authConfigRepository;
     private final ApiToolMetadataRepository apiToolMetadataRepository;
     private final ToolRepository toolRepository;
@@ -45,14 +49,14 @@ public class ApiAuthService {
                 .orElseThrow(() -> new ToolNotFoundException(toolId));
 
         if (tool.getToolType() != ToolType.API_TOOL) {
-            throw new ToolTypeNotCompatibleException(toolId, "API_TOOL");
+            throw new ToolTypeNotCompatibleException(toolId, API_TOOL);
         }
 
         List<ApiAuthConfig> configs = authConfigRepository.findByToolId(toolId);
 
         return configs.stream()
                 .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -65,7 +69,7 @@ public class ApiAuthService {
         log.debug("Getting authentication configuration: {}", configId);
 
         ApiAuthConfig config = authConfigRepository.findById(configId)
-                .orElseThrow(() -> new ResourceNotFoundException("API authentication configuration", configId));
+                .orElseThrow(() -> new ResourceNotFoundException(API_AUTH_CONFIG, configId));
 
         return mapToDto(config);
     }
@@ -210,22 +214,22 @@ public class ApiAuthService {
         log.debug("Updating authentication configuration: {}", configId);
 
         ApiAuthConfig authConfig = authConfigRepository.findById(configId)
-                .orElseThrow(() -> new ResourceNotFoundException("API authentication configuration", configId));
+                .orElseThrow(() -> new ResourceNotFoundException(API_AUTH_CONFIG, configId));
 
         // Update common fields
         authConfig.setName(config.getName());
         authConfig.setDescription(config.getDescription());
         authConfig.setEnabled(config.isEnabled());
 
-        // Update type-specific fields
-        if (authConfig instanceof ApiKeyAuthConfig && config instanceof ApiKeyAuthConfigDTO) {
-            updateApiKeyAuth((ApiKeyAuthConfig) authConfig, (ApiKeyAuthConfigDTO) config);
-        } else if (authConfig instanceof BasicAuthConfig && config instanceof BasicAuthConfigDTO) {
-            updateBasicAuth((BasicAuthConfig) authConfig, (BasicAuthConfigDTO) config);
-        } else if (authConfig instanceof BearerTokenAuthConfig && config instanceof BearerTokenAuthConfigDTO) {
-            updateBearerTokenAuth((BearerTokenAuthConfig) authConfig, (BearerTokenAuthConfigDTO) config);
-        } else if (authConfig instanceof OAuth2AuthConfig && config instanceof OAuth2AuthConfigDTO) {
-            updateOAuth2Auth((OAuth2AuthConfig) authConfig, (OAuth2AuthConfigDTO) config);
+        // Update type-specific fields using pattern matching
+        if (authConfig instanceof ApiKeyAuthConfig apiKeyAuth && config instanceof ApiKeyAuthConfigDTO apiKeyConfig) {
+            updateApiKeyAuth(apiKeyAuth, apiKeyConfig);
+        } else if (authConfig instanceof BasicAuthConfig basicAuth && config instanceof BasicAuthConfigDTO basicConfig) {
+            updateBasicAuth(basicAuth, basicConfig);
+        } else if (authConfig instanceof BearerTokenAuthConfig tokenAuth && config instanceof BearerTokenAuthConfigDTO tokenConfig) {
+            updateBearerTokenAuth(tokenAuth, tokenConfig);
+        } else if (authConfig instanceof OAuth2AuthConfig oauth2Auth && config instanceof OAuth2AuthConfigDTO oauth2Config) {
+            updateOAuth2Auth(oauth2Auth, oauth2Config);
         } else {
             throw new IllegalArgumentException("Authentication configuration type mismatch");
         }
@@ -246,7 +250,7 @@ public class ApiAuthService {
         log.debug("Deleting authentication configuration: {}", configId);
 
         ApiAuthConfig authConfig = authConfigRepository.findById(configId)
-                .orElseThrow(() -> new ResourceNotFoundException("API authentication configuration", configId));
+                .orElseThrow(() -> new ResourceNotFoundException(API_AUTH_CONFIG, configId));
 
         authConfigRepository.delete(authConfig);
     }
@@ -262,11 +266,11 @@ public class ApiAuthService {
                 .orElseThrow(() -> new ToolNotFoundException(toolId));
 
         if (tool.getToolType() != ToolType.API_TOOL) {
-            throw new ToolTypeNotCompatibleException(toolId, "API_TOOL");
+            throw new ToolTypeNotCompatibleException(toolId, API_TOOL);
         }
 
         return apiToolMetadataRepository.findByToolId(toolId)
-                .orElseThrow(() -> new ResourceNotFoundException("API tool metadata", toolId));
+                .orElseThrow(() -> new ResourceNotFoundException(API_TOOL_METADATA, toolId));
     }
 
     /**
@@ -332,8 +336,8 @@ public class ApiAuthService {
             return null;
         }
 
-        if (config instanceof ApiKeyAuthConfig) {
-            ApiKeyAuthConfig apiKeyConfig = (ApiKeyAuthConfig) config;
+        // Using pattern matching for instanceof
+        if (config instanceof ApiKeyAuthConfig apiKeyConfig) {
             return ApiKeyAuthConfigDTO.builder()
                     .id(apiKeyConfig.getId())
                     .authType(apiKeyConfig.getAuthType())
@@ -344,8 +348,7 @@ public class ApiAuthService {
                     .keyName(apiKeyConfig.getKeyName())
                     .keyLocation(apiKeyConfig.getKeyLocation())
                     .build();
-        } else if (config instanceof BasicAuthConfig) {
-            BasicAuthConfig basicConfig = (BasicAuthConfig) config;
+        } else if (config instanceof BasicAuthConfig basicConfig) {
             return BasicAuthConfigDTO.builder()
                     .id(basicConfig.getId())
                     .authType(basicConfig.getAuthType())
@@ -355,8 +358,7 @@ public class ApiAuthService {
                     .username(basicConfig.getUsername())
                     .password(basicConfig.getPassword())
                     .build();
-        } else if (config instanceof BearerTokenAuthConfig) {
-            BearerTokenAuthConfig tokenConfig = (BearerTokenAuthConfig) config;
+        } else if (config instanceof BearerTokenAuthConfig tokenConfig) {
             return BearerTokenAuthConfigDTO.builder()
                     .id(tokenConfig.getId())
                     .authType(tokenConfig.getAuthType())
@@ -366,8 +368,7 @@ public class ApiAuthService {
                     .token(tokenConfig.getToken())
                     .tokenPrefix(tokenConfig.getTokenPrefix())
                     .build();
-        } else if (config instanceof OAuth2AuthConfig) {
-            OAuth2AuthConfig oauth2Config = (OAuth2AuthConfig) config;
+        } else if (config instanceof OAuth2AuthConfig oauth2Config) {
             return OAuth2AuthConfigDTO.builder()
                     .id(oauth2Config.getId())
                     .authType(oauth2Config.getAuthType())

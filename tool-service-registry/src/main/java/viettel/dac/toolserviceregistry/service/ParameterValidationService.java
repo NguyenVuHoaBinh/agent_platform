@@ -623,4 +623,73 @@ public class ParameterValidationService {
         return providedParameters.containsKey(paramName) &&
                 providedParameters.get(paramName) != null;
     }
+    /**
+     * Generates formatted parameter prompts for missing parameters.
+     *
+     * @param missingParameters Map of tool ID to set of missing parameters
+     * @param toolIds List of tool IDs to include in the prompts
+     * @return Map of tool ID to list of formatted prompts
+     */
+    public Map<String, List<String>> generateParameterPrompts(
+            Map<String, Set<ParameterRequirement>> missingParameters,
+            List<String> toolIds) {
+
+        Map<String, List<String>> prompts = new HashMap<>();
+
+        for (String toolId : toolIds) {
+            Set<ParameterRequirement> requirements = missingParameters.get(toolId);
+            if (requirements == null || requirements.isEmpty()) {
+                continue;
+            }
+
+            List<String> toolPrompts = new ArrayList<>();
+            Tool tool = toolRepository.findById(toolId).orElse(null);
+            if (tool == null) {
+                continue;
+            }
+
+            // Sort parameters by priority (higher values first) and required status
+            List<ParameterRequirement> sortedRequirements = new ArrayList<>(requirements);
+            sortedRequirements.sort((a, b) -> {
+                if (a.isRequired() != b.isRequired()) {
+                    return a.isRequired() ? -1 : 1;
+                }
+                return Integer.compare(b.getPriority(), a.getPriority());
+            });
+
+            for (ParameterRequirement req : sortedRequirements) {
+                StringBuilder promptBuilder = new StringBuilder();
+
+                // Add required indicator
+                if (req.isRequired()) {
+                    promptBuilder.append("[Required] ");
+                }
+
+                // Add parameter name and description
+                promptBuilder.append(req.getName())
+                        .append(": ")
+                        .append(req.getDescription());
+
+                // Add examples if available
+                if (req.getExamples() != null && !req.getExamples().isEmpty()) {
+                    promptBuilder.append(" (e.g., ")
+                            .append(req.getExamples())
+                            .append(")");
+                }
+
+                // Add default value if available
+                if (req.getDefaultValue() != null && !req.getDefaultValue().isEmpty()) {
+                    promptBuilder.append(" [Default: ")
+                            .append(req.getDefaultValue())
+                            .append("]");
+                }
+
+                toolPrompts.add(promptBuilder.toString());
+            }
+
+            prompts.put(toolId, toolPrompts);
+        }
+
+        return prompts;
+    }
 }

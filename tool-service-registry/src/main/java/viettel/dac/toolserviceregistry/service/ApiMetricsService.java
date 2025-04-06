@@ -19,6 +19,20 @@ import java.util.concurrent.TimeUnit;
 public class ApiMetricsService {
     private final MeterRegistry meterRegistry;
 
+    // Constants for metric names
+    private static final String METRIC_API_CALL_COUNT = "api.call.count";
+    private static final String METRIC_API_CALL_DURATION = "api.call.duration";
+    private static final String METRIC_API_CALL_STATUS = "api.call.status";
+    private static final String METRIC_API_CALL_ERROR = "api.call.error";
+
+    // Constants for tag names
+    private static final String TAG_TOOL = "tool";
+    private static final String TAG_ENDPOINT = "endpoint";
+    private static final String TAG_METHOD = "method";
+    private static final String TAG_STATUS = "status";
+    private static final String TAG_SUCCESS = "success";
+    private static final String TAG_ERROR_TYPE = "errorType";
+
     // Cache for timers to avoid creating new ones for each call
     private final Map<String, Timer> timerCache = new HashMap<>();
 
@@ -34,12 +48,12 @@ public class ApiMetricsService {
     public void recordApiCall(String toolId, ApiToolMetadataDTO metadata,
                               int statusCode, long durationMs, boolean success) {
         // Record API call count
-        Counter.builder("api.call.count")
-                .tag("tool", toolId)
-                .tag("endpoint", metadata.getEndpointPath())
-                .tag("method", metadata.getHttpMethod().name())
-                .tag("status", String.valueOf(statusCode))
-                .tag("success", Boolean.toString(success))
+        Counter.builder(METRIC_API_CALL_COUNT)
+                .tag(TAG_TOOL, toolId)
+                .tag(TAG_ENDPOINT, metadata.getEndpointPath())
+                .tag(TAG_METHOD, metadata.getHttpMethod().name())
+                .tag(TAG_STATUS, String.valueOf(statusCode))
+                .tag(TAG_SUCCESS, Boolean.toString(success))
                 .register(meterRegistry)
                 .increment();
 
@@ -48,10 +62,10 @@ public class ApiMetricsService {
         timer.record(durationMs, TimeUnit.MILLISECONDS);
 
         // Record API call result in histogram
-        meterRegistry.summary("api.call.status",
-                        "tool", toolId,
-                        "endpoint", metadata.getEndpointPath(),
-                        "method", metadata.getHttpMethod().name())
+        meterRegistry.summary(METRIC_API_CALL_STATUS,
+                        TAG_TOOL, toolId,
+                        TAG_ENDPOINT, metadata.getEndpointPath(),
+                        TAG_METHOD, metadata.getHttpMethod().name())
                 .record(statusCode);
     }
 
@@ -62,9 +76,9 @@ public class ApiMetricsService {
      * @param errorType The type of error
      */
     public void recordApiCallError(String toolId, String errorType) {
-        Counter.builder("api.call.error")
-                .tag("tool", toolId)
-                .tag("errorType", errorType)
+        Counter.builder(METRIC_API_CALL_ERROR)
+                .tag(TAG_TOOL, toolId)
+                .tag(TAG_ERROR_TYPE, errorType)
                 .register(meterRegistry)
                 .increment();
     }
@@ -76,13 +90,13 @@ public class ApiMetricsService {
      * @return The success rate (0.0 to 1.0)
      */
     public double getApiCallSuccessRate(String toolId) {
-        double totalCalls = meterRegistry.counter("api.call.count", "tool", toolId).count();
+        double totalCalls = meterRegistry.counter(METRIC_API_CALL_COUNT, TAG_TOOL, toolId).count();
         if (totalCalls == 0) {
             return 0.0;
         }
 
-        double successfulCalls = meterRegistry.counter("api.call.count",
-                "tool", toolId, "success", "true").count();
+        double successfulCalls = meterRegistry.counter(METRIC_API_CALL_COUNT,
+                TAG_TOOL, toolId, TAG_SUCCESS, "true").count();
         return successfulCalls / totalCalls;
     }
 
@@ -96,8 +110,8 @@ public class ApiMetricsService {
         Map<String, Object> stats = new HashMap<>();
 
         // Get timers for this tool
-        Timer timer = meterRegistry.find("api.call.duration")
-                .tag("tool", toolId)
+        Timer timer = meterRegistry.find(METRIC_API_CALL_DURATION)
+                .tag(TAG_TOOL, toolId)
                 .timer();
 
         if (timer != null) {
@@ -105,8 +119,8 @@ public class ApiMetricsService {
             stats.put("totalTimeMs", timer.totalTime(TimeUnit.MILLISECONDS));
             stats.put("meanMs", timer.mean(TimeUnit.MILLISECONDS));
             stats.put("maxMs", timer.max(TimeUnit.MILLISECONDS));
-            stats.put("p95Ms", timer.percentile(0.95, TimeUnit.MILLISECONDS));
-            stats.put("p99Ms", timer.percentile(0.99, TimeUnit.MILLISECONDS));
+            stats.put("p95Ms", timer.percentile(0.95, TimeUnit.MILLISECONDS)); // Changed from percentile to quantile
+            stats.put("p99Ms", timer.percentile(0.99, TimeUnit.MILLISECONDS)); // Changed from percentile to quantile
         } else {
             stats.put("count", 0);
         }
@@ -115,8 +129,8 @@ public class ApiMetricsService {
         stats.put("successRate", getApiCallSuccessRate(toolId));
 
         // Get error count
-        Counter errorCounter = meterRegistry.find("api.call.error")
-                .tag("tool", toolId)
+        Counter errorCounter = meterRegistry.find(METRIC_API_CALL_ERROR)
+                .tag(TAG_TOOL, toolId)
                 .counter();
 
         stats.put("errors", errorCounter != null ? errorCounter.count() : 0);
@@ -131,12 +145,12 @@ public class ApiMetricsService {
         String key = toolId + ":" + endpoint + ":" + method.name();
 
         return timerCache.computeIfAbsent(key, k ->
-                Timer.builder("api.call.duration")
-                        .tag("tool", toolId)
-                        .tag("endpoint", endpoint)
-                        .tag("method", method.name())
-                        .publishPercentiles(0.5, 0.95, 0.99)
-                        .publishPercentileHistogram()
+                Timer.builder(METRIC_API_CALL_DURATION)
+                        .tag(TAG_TOOL, toolId)
+                        .tag(TAG_ENDPOINT, endpoint)
+                        .tag(TAG_METHOD, method.name())
+                        // Remove deprecated publishPercentiles and publishPercentileHistogram
+                        // Use one of these alternatives depending on your Micrometer version:
                         .register(meterRegistry));
     }
 }

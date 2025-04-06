@@ -12,9 +12,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * Response with an execution plan.
+ * Enhanced response model with an execution plan.
  */
 @Data
 @Builder
@@ -33,4 +34,20 @@ public class ExecutionPlanResponse extends BaseEvent {
     private Map<String, List<ParameterMappingDTO>> parameterMappings = new HashMap<>();
 
     private boolean hasMissingRequiredParameters;
+
+    /**
+     * Groups of tools that can be executed in parallel
+     */
+    @Builder.Default
+    private List<Set<String>> parallelExecutionGroups = new ArrayList<>();
+
+    /**
+     * Version of the execution plan
+     */
+    private int version;
+
+    /**
+     * Flag indicating whether the plan has been optimized
+     */
+    private boolean optimized;
 }

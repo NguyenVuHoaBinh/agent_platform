@@ -26,7 +26,6 @@ import viettel.dac.toolserviceregistry.repository.ToolRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Service for managing API parameter mappings.
@@ -35,10 +34,15 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class ApiParameterMappingService {
+
     private final ApiParameterMappingRepository apiParameterMappingRepository;
     private final ApiToolMetadataRepository apiToolMetadataRepository;
     private final ToolRepository toolRepository;
     private final ToolParameterRepository toolParameterRepository;
+
+    // Constants for error messages
+    private static final String TOOL_TYPE_NOT_COMPATIBLE = "API_TOOL";
+    private static final String API_TOOL_MISSING_METADATA_MESSAGE = "API_TOOL missing metadata";
 
     /**
      * Get parameter mappings for an API tool.
@@ -53,17 +57,18 @@ public class ApiParameterMappingService {
                 .orElseThrow(() -> new ToolNotFoundException(toolId));
 
         if (tool.getToolType() != ToolType.API_TOOL) {
-            throw new ToolTypeNotCompatibleException(toolId, "API_TOOL");
+            throw new ToolTypeNotCompatibleException(toolId, TOOL_TYPE_NOT_COMPATIBLE);
         }
 
         ApiToolMetadata metadata = apiToolMetadataRepository.findByToolId(toolId)
-                .orElseThrow(() -> new ToolTypeNotCompatibleException(toolId, "API_TOOL missing metadata"));
+                .orElseThrow(() -> new ToolTypeNotCompatibleException(toolId, API_TOOL_MISSING_METADATA_MESSAGE));
 
         List<ApiParameterMapping> mappings = apiParameterMappingRepository.findByApiToolMetadataId(metadata.getId());
 
         return mappings.stream()
                 .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .toList();
+
     }
 
     /**
@@ -83,7 +88,7 @@ public class ApiParameterMappingService {
                 .orElseThrow(() -> new ToolNotFoundException(toolId));
 
         if (tool.getToolType() != ToolType.API_TOOL) {
-            throw new ToolTypeNotCompatibleException(toolId, "API_TOOL");
+            throw new ToolTypeNotCompatibleException(toolId, TOOL_TYPE_NOT_COMPATIBLE);
         }
 
         ToolParameter parameter = toolParameterRepository.findById(parameterId)
@@ -96,7 +101,7 @@ public class ApiParameterMappingService {
         }
 
         ApiToolMetadata metadata = apiToolMetadataRepository.findByToolId(toolId)
-                .orElseThrow(() -> new ToolTypeNotCompatibleException(toolId, "API_TOOL missing metadata"));
+                .orElseThrow(() -> new ToolTypeNotCompatibleException(toolId,API_TOOL_MISSING_METADATA_MESSAGE));
 
         // Create new mapping
         ApiParameterMapping mapping = new ApiParameterMapping();
@@ -191,11 +196,11 @@ public class ApiParameterMappingService {
                 .orElseThrow(() -> new ToolNotFoundException(toolId));
 
         if (tool.getToolType() != ToolType.API_TOOL) {
-            throw new ToolTypeNotCompatibleException(toolId, "API_TOOL");
+            throw new ToolTypeNotCompatibleException(toolId, TOOL_TYPE_NOT_COMPATIBLE);
         }
 
         ApiToolMetadata metadata = apiToolMetadataRepository.findByToolId(toolId)
-                .orElseThrow(() -> new ToolTypeNotCompatibleException(toolId, "API_TOOL missing metadata"));
+                .orElseThrow(() -> new ToolTypeNotCompatibleException(toolId,API_TOOL_MISSING_METADATA_MESSAGE));
 
         // Delete existing mappings
         List<ApiParameterMapping> existingMappings =
@@ -232,7 +237,8 @@ public class ApiParameterMappingService {
 
         return savedMappings.stream()
                 .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .toList(); // Use Stream.toList() for an unmodifiable list
+
     }
 
     /**
