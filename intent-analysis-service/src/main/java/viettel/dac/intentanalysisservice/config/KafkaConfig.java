@@ -1,4 +1,4 @@
-package viettel.dac.toolserviceregistry.config;
+package viettel.dac.intentanalysisservice.config;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.TopicPartition;
@@ -6,7 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.TopicBuilder;
+import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
@@ -16,11 +18,11 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 
 /**
- * Configuration for Kafka topics and error handling.
+ * Configuration for Kafka topics and listeners.
  */
 @Configuration
 @EnableKafka
-public class KafkaTopicConfig {
+public class KafkaConfig {
 
     @Value("${kafka.topic.tool-events}")
     private String toolEventsTopic;
@@ -42,7 +44,6 @@ public class KafkaTopicConfig {
         return TopicBuilder.name(toolEventsTopic)
                 .partitions(6)
                 .replicas(2)
-                .compact() // Enable log compaction for events
                 .build();
     }
 
@@ -80,21 +81,10 @@ public class KafkaTopicConfig {
     }
 
     /**
-     * Creates the dead letter queue topic for tool events.
+     * Creates the dead letter queue topic for failed messages.
      */
     @Bean
-    public NewTopic toolEventsDlqTopic() {
-        return TopicBuilder.name(toolEventsTopic + "-dlq")
-                .partitions(3)
-                .replicas(2)
-                .build();
-    }
-
-    /**
-     * Creates the dead letter queue topic for intent analysis events.
-     */
-    @Bean
-    public NewTopic intentAnalysisEventsDlqTopic() {
+    public NewTopic intentAnalysisDlqTopic() {
         return TopicBuilder.name(intentAnalysisEventsTopic + "-dlq")
                 .partitions(3)
                 .replicas(2)
@@ -102,21 +92,28 @@ public class KafkaTopicConfig {
     }
 
     /**
-     * Creates the dead letter queue topic for tool registry requests.
+     * Creates a Kafka listener container factory with error handling.
      */
     @Bean
-    public NewTopic toolRegistryRequestsDlqTopic() {
-        return TopicBuilder.name(toolRegistryRequestsTopic + "-dlq")
-                .partitions(3)
-                .replicas(2)
-                .build();
+    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory(
+            ConsumerFactory<String, String> consumerFactory,
+            KafkaTemplate<String, String> kafkaTemplate) {
+
+        ConcurrentKafkaListenerContainerFactory<String, String> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactory);
+
+        // Configure error handler with DLQ
+        factory.setCommonErrorHandler(kafkaErrorHandler(kafkaTemplate));
+
+        // Enable metrics
+        factory.getContainerProperties().setMicrometerEnabled(true);
+
+        return factory;
     }
 
-    /**
-     * Creates error handler for Kafka consumers with DLQ support.
-     */
     @Bean
-    public DefaultErrorHandler kafkaErrorHandler(KafkaTemplate<String, Object> kafkaTemplate) {
+    public DefaultErrorHandler kafkaErrorHandler(KafkaTemplate<String, String> kafkaTemplate) {
         // Define a recovery callback that sends failed messages to a DLQ
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(kafkaTemplate,
                 (record, ex) -> new TopicPartition(record.topic() + "-dlq", record.partition()));

@@ -13,6 +13,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import viettel.dac.toolserviceregistry.exception.ToolNotFoundException;
+import viettel.dac.toolserviceregistry.mapper.ToolMapper;
 import viettel.dac.toolserviceregistry.model.dto.*;
 import viettel.dac.toolserviceregistry.model.entity.*;
 import viettel.dac.toolserviceregistry.model.enums.ToolType;
@@ -21,10 +22,7 @@ import viettel.dac.toolserviceregistry.repository.ApiToolMetadataRepository;
 import viettel.dac.toolserviceregistry.repository.ToolDependencyRepository;
 import viettel.dac.toolserviceregistry.repository.ToolRepository;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,6 +37,7 @@ public class ToolQueryService {
     private final ToolDependencyGraphService graphService;
     private final ExecutionPlanService executionPlanService;
     private final ObjectMapper objectMapper;
+    private final ToolMapper toolMapper;
 
     public ToolQueryResponse queryTools(
             Boolean active,
@@ -307,5 +306,61 @@ public class ToolQueryService {
                 .outputParameters(outputParams)
                 .build();
     }
-    
+    /**
+     * Gets tools by their IDs.
+     *
+     * @param toolIds The list of tool IDs
+     * @return List of tool DTOs
+     */
+    public List<ToolDTO> getToolsByIds(List<String> toolIds) {
+        log.debug("Getting tools by IDs: {}", toolIds);
+
+        if (toolIds == null || toolIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Find all tools by the provided IDs
+        List<Tool> tools = toolRepository.findAllById(toolIds);
+
+        // Map to DTOs
+        return tools.stream()
+                .map(toolMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Gets all active tools.
+     *
+     * @return List of active tool DTOs
+     */
+    public List<ToolDTO> getAllActiveTools() {
+        log.debug("Getting all active tools");
+
+        // Find all active tools
+        List<Tool> tools = toolRepository.findAllByActiveTrue();
+
+        // Map to DTOs
+        return tools.stream()
+                .map(toolMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    // Add this method if it doesn't already exist in your ToolQueryService
+    public List<ToolDTO> getToolsByNames(List<String> toolNames) {
+        log.debug("Getting tools by names: {}", toolNames);
+
+        if (toolNames == null || toolNames.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<ToolDTO> result = new ArrayList<>();
+
+        for (String name : toolNames) {
+            toolRepository.findByName(name)
+                    .map(toolMapper::toDto)
+                    .ifPresent(result::add);
+        }
+
+        return result;
+    }
 }
